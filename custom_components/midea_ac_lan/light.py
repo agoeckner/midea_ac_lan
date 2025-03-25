@@ -1,5 +1,14 @@
 import logging
-from homeassistant.components.light import *
+from homeassistant.components.light import (
+    LightEntity,
+    LightEntityFeature,
+    ColorMode,
+    ATTR_BRIGHTNESS,
+    ATTR_COLOR_TEMP_KELVIN,
+    ATTR_EFFECT,
+    LightEntityFeature,
+    Any
+)
 from homeassistant.const import (
     Platform,
     CONF_DEVICE_ID,
@@ -80,15 +89,20 @@ class MideaLight(MideaEntity, LightEntity):
     @property
     def supported_features(self) -> LightEntityFeature:
         supported_features = 0
-        if self._device.get_attribute(X13Attributes.brightness):
-            supported_features |= SUPPORT_BRIGHTNESS
-        if self._device.get_attribute(X13Attributes.color_temperature):
-            supported_features |= SUPPORT_COLOR_TEMP
         if self._device.get_attribute(X13Attributes.effect):
-            supported_features |= SUPPORT_EFFECT
-        if self._device.get_attribute(X13Attributes.rgb_color):
-            supported_features |= SUPPORT_COLOR
+            supported_features |=  LightEntityFeature.EFFECT
         return supported_features
+
+    @property
+    def supported_color_modes(self) -> set[ColorMode]:
+        color_modes = {}
+        if self._device.get_attribute(X13Attributes.brightness):
+            color_modes.add(ColorMode.BRIGHTNESS)
+        if self._device.get_attribute(X13Attributes.color_temperature):
+            color_modes.add(ColorMode.COLOR_TEMP)
+        if self._device.get_attribute(X13Attributes.rgb_color):
+            color_modes.add(ColorMode.RGB)
+        return color_modes
 
     def turn_on(self, **kwargs: Any):
         if not self.is_on:
@@ -97,7 +111,7 @@ class MideaLight(MideaEntity, LightEntity):
             value = kwargs.get(key)
             if key == ATTR_BRIGHTNESS:
                 self._device.set_attribute(attr=X13Attributes.brightness, value=value)
-            if key == ATTR_COLOR_TEMP:
+            if key == ATTR_COLOR_TEMP_KELVIN:
                 self._device.set_attribute(attr=X13Attributes.color_temperature, value=round(1000000 / value))
             if key == ATTR_EFFECT:
                 self._device.set_attribute(attr=X13Attributes.effect, value=value)
